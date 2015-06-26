@@ -19,6 +19,6 @@
   {mod, {oauth2_example, []}},
   {registered, []},
   {env, []},
-  {start_phases, [{start_oauth2_backend, []}, {start_cowboy_listeners, []}]}
+  {start_phases, [{start_cowboy_listeners, []}]}
  ]
 }.

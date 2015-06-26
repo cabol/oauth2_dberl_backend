@@ -114,9 +114,9 @@ delete_client(Id) ->
 %% @hidden
 authenticate_user({Username, Password}, _) ->
   case get(?USER_TABLE, Username) of
-    {ok, #{password := Password}} ->
+    {ok, #{<<"password">> := Password}} ->
       {ok, {<<"user">>, Username}};
-    {ok, #{password := _WrongPassword}} ->
+    {ok, #{<<"password">> := _WrongPassword}} ->
       {error, badpass};
     Error = {error, notfound} ->
       Error
@@ -125,19 +125,19 @@ authenticate_user({Username, Password}, _) ->
 %% @hidden
 authenticate_client({ClientId, ClientSecret}, _) ->
   case get(?CLIENT_TABLE, ClientId) of
-    {ok, #{client_secret := ClientSecret}} ->
+    {ok, #{<<"client_secret">> := ClientSecret}} ->
       {ok, {<<"client">>, ClientId}};
-    {ok, #{client_secret := _WrongSecret}} ->
+    {ok, #{<<"client_secret">> := _WrongSecret}} ->
       {error, badsecret};
     _ ->
       {error, notfound}
   end.
 
 %% @hidden
-get_client_identity(ClientId, AppCtx) ->
+get_client_identity(ClientId, _) ->
   case get(?CLIENT_TABLE, ClientId) of
-    {ok, Client} ->
-      {ok, {AppCtx, Client}};
+    {ok, _} ->
+      {ok, {<<"client">>, ClientId}};
     _ ->
       {error, notfound}
   end.
@@ -171,7 +171,7 @@ resolve_access_token(AccessToken, AppCtx) ->
   %% returned from this function according to the spec.
   case get(?ACCESS_TOKEN_TABLE, AccessToken) of
     {ok, Value} ->
-      {ok, {AppCtx, Value}};
+      {ok, {AppCtx, maps:to_list(Value)}};
     Error = {error, notfound} ->
       Error
   end.
@@ -192,7 +192,7 @@ revoke_refresh_token(_RefreshToken, AppCtx) ->
 %% @hidden
 get_redirection_uri(ClientId, AppCtx) ->
   case get(?CLIENT_TABLE, ClientId) of
-    {ok, #{redirect_uri := RedirectUri}} ->
+    {ok, #{<<"redirect_uri">> := RedirectUri}} ->
       {ok, {AppCtx, RedirectUri}};
     Error = {error, notfound} ->
       Error
@@ -201,7 +201,7 @@ get_redirection_uri(ClientId, AppCtx) ->
 %% @hidden
 verify_redirection_uri(ClientId, ClientUri, AppCtx) ->
   case get(?CLIENT_TABLE, ClientId) of
-    {ok, #{redirect_uri := RedirUri}} when ClientUri =:= RedirUri ->
+    {ok, #{<<"redirect_uri">> := RedirUri}} when ClientUri =:= RedirUri ->
       {ok, AppCtx};
     _Error ->
       {error, mismatch}
@@ -229,7 +229,7 @@ verify_scope(_, _, _) ->
 get(Table, Key) ->
   case dberl_repo:fetch(Table, Key) of
     {error, notfound} -> {error, notfound};
-    Value             -> {ok, norm_values(Value)}
+    Value             -> {ok, Value}
   end.
 
 %% @private
@@ -239,8 +239,3 @@ put(Table, Key, Value) ->
 %% @private
 delete(Table, Key) ->
   dberl_repo:delete(Table, Key).
-
-%% @private
-norm_values(Map) ->
-  F = fun({K, V}, Acc) -> maps:put(dberl_util:to_bin(K), V, Acc) end,
-  lists:foldl(F, #{}, maps:to_list(Map)).

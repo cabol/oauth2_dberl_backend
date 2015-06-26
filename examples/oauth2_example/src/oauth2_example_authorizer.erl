@@ -14,7 +14,8 @@ is_authorized(Req, State) ->
     case get_access_token(Req) of
       {ok, Token} ->
         case oauth2:verify_access_token(Token, []) of
-          {ok, _Identity} ->
+          {ok, Identity} ->
+            lager:notice("Identity: ~p~n", [Identity]),
             {true, Req, State};
           {error, access_denied} ->
             {{false, ?AUTH_HEADER}, Req, State}

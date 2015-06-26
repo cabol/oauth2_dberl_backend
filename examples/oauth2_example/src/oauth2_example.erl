@@ -18,9 +18,6 @@ start(_Type, _Args) ->
   oauth2_example_sup:start_link().
 
 -spec start_phase(atom(), application:start_type(), []) -> ok | {error, _}.
-start_phase(start_oauth2_backend, _StartType, []) ->
-  start_oauth2_backend(),
-  ok;
 start_phase(start_cowboy_listeners, _StartType, []) ->
   Routes     = cowboy_routes(),
   Dispatch   = cowboy_router:compile(Routes),
@@ -41,21 +38,6 @@ stop(_State) ->
 %%%===================================================================
 %%% Internals
 %%%===================================================================
-
-%% @private
-start_oauth2_backend() ->
-  Master = list_to_atom(
-    application:get_env(oauth2_example, master_node, "master@127.0.0.1")),
-  TablesConfig = application:get_env(oauth2, tables_config, undefined),
-  case Master =:= node() of
-    true ->
-      lager:info("Init Master Node: ~p~n", [node()]),
-      oauth2_mnesia_backend:start(TablesConfig, []);
-    false ->
-      lager:info("Init Slave Node: ~p~n", [node()]),
-      net_adm:ping(Master),
-      oauth2_mnesia_backend:start(TablesConfig, nodes())
-  end.
 
 %% @private
 cowboy_routes() ->
